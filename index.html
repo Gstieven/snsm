@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <title>Avertisseur SNSM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=0" />
+    <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/2/22/Les_Sauveteurs_en_Mer_-_SNSM.svg"
+        type="image/svg">
+    <style>
+        section {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            bottom: 0px;
+            left: 0px;
+
+            background-color: #ea4708;
+            color: #fff;
+            font-family: sans-serif;
+            text-align: center;
+        }
+
+        section.blink {
+            animation: blink 800ms step-end infinite;
+        }
+
+        @keyframes blink {
+            0% {
+                background-color: #ea4708;
+                color: #fff;
+            }
+
+            70% {
+                background-color: #fff;
+                color: #ea4708;
+            }
+
+            80% {
+                background-color: #ea4708;
+                color: #fff;
+            }
+
+            90% {
+                background-color: #fff;
+                color: #ea4708;
+            }
+        }
+
+        h1 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin: 0;
+            transform: translate(-50%, -50%);
+            user-select: none;
+            cursor: pointer;
+
+            font-size: 30vw;
+        }
+
+        .blink:not(.reverse) h1 {
+            transform: translate(-50%, -50%) scaleX(-1);
+        }
+
+        h2 {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            margin: 0;
+            transform: translate(-50%, -50%);
+            user-select: none;
+            cursor: pointer;
+
+            font-size: 30px;
+        }
+    </style>
+</head>
+
+<body>
+    <section>
+        <h1>OFF</h1>
+        <h2 style="display: none;">><< /h2>
+    </section>
+    <script>
+        const section = document.querySelector('section');
+        const mainButton = document.querySelector('h1');
+        const reverseButton = document.querySelector('h2');
+        let running = false;
+        let reverse = false;
+
+        // test support
+        let isSupported = false;
+
+        if ('wakeLock' in navigator) {
+            isSupported = true;
+        } else {
+            alert(`Impossible de verouiller l'avertisseur "WakeLock" non supporté`);
+        }
+
+        if (isSupported) {
+            // create a reference for the wake lock
+            let wakeLock = null;
+
+            // create an async function to request a wake lock
+            const requestWakeLock = async () => {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                } catch (err) {
+                    alert(`Impossible de verouiller l'avertisseur (batterie faible ?)`);
+                }
+
+            }
+
+            // Switch ON / OFF
+            mainButton.addEventListener('click', () => {
+                if (!running) {
+                    running = true;
+
+                    reverseButton.style.display = 'block';
+                    section.classList.add('blink');
+                    mainButton.textContent = 'SNSM';
+                    section.requestFullscreen();
+                    try {
+                        screen.orientation.lock('landscape');
+                    } catch (err) {
+                        console.log(`Impossible de verouiller l'orientation`);
+                    }
+
+                    requestWakeLock();
+
+                } else {
+                    running = false;
+
+                    reverseButton.style.display = 'none';
+                    section.classList.remove('blink');
+                    mainButton.textContent = 'OFF';
+                    screen.orientation.unlock();
+                    document.exitFullscreen();
+
+                    wakeLock.release().then(() => {
+                        wakeLock = null;
+                    })
+                }
+            })
+
+            // Switch ON / OFF
+            reverseButton.addEventListener('click', () => {
+                if (!reverse) {
+                    reverse = true;
+
+                    section.classList.add('reverse');
+                } else {
+                    reverse = false;
+
+                    section.classList.remove('reverse');
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>
